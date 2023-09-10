@@ -1,0 +1,16 @@
+{
+  "tasks": {
+    "bundle": "deno run --allow-read --allow-write=./bundles --allow-env --allow-run bundle.ts"
+  },
+  "fmt": {
+    "semiColons": false,
+    "singleQuote": true
+  },
+  "compilerOptions": {
+    "lib": [
+      "deno.ns",
+      "dom",
+      "dom.iterable"
+    ]
+  }
+}
