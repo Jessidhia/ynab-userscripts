@@ -50,7 +50,9 @@ if (container) {
         date: tx.date,
         payee: tx.payee,
         amount: -tx.totalAmount,
-        memo: tx.notes,
+        memo: tx.countryCode
+          ? `${codeToFlag(tx.countryCode)}${tx.notes ? ` ${tx.notes}` : ''}`
+          : tx.notes,
         splits: tx.transactionFee > 0
           ? [{ amount: -tx.baseAmount }, {
             amount: -tx.transactionFee,
@@ -77,4 +79,39 @@ if (container) {
       result,
     )
   })
+}
+
+function codeToFlag(cc: string) {
+  switch (cc) {
+    case 'DEU':
+    case 'FRA':
+    case 'GBR':
+    case 'NLD':
+    case 'SGP':
+    case 'USA':
+      return toFlag(cc.slice(0, 2))
+    case 'IRL':
+      return toFlag('IE')
+    case 'SWE':
+      return toFlag('SE')
+
+    // GUESSES
+    case 'LND':
+      return toFlag('GB')
+    case 'TOK':
+      return toFlag('JP')
+    case 'HH':
+      return toFlag('HK')
+  }
+
+  return `cc:${cc}`
+
+  function toFlag(cc: string) {
+    // rotate UPPERCASE latin to regional symbols
+    return String.fromCodePoint(
+      ...cc.split('').map((letter) =>
+        letter.codePointAt(0)! + (0x1f1e5 - 0x40)
+      ),
+    )
+  }
 }

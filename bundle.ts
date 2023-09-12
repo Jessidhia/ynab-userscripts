@@ -5,6 +5,11 @@ await runBuild({
     name: 'Rakuten Card QIF generator',
     match:
       'https://www.rakuten-card.co.jp/e-navi/members/statement/index.xhtml',
+    icon: 'https://www.rakuten-card.co.jp/favicon.ico',
+    noframes: true,
+    version: '0.0.2',
+    author: 'Jessidhia',
+  },
   },
 })
 Deno.exit()
@@ -12,6 +17,7 @@ Deno.exit()
 /** @see https://violentmonkey.github.io/api/metadata-block/ */
 interface MetadataBlock {
   name: string
+  author?: string
   description?: string | string[]
   /**
    * @see https://violentmonkey.github.io/api/matching/

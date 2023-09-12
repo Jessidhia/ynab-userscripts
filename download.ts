@@ -1,7 +1,7 @@
 export default function triggerDownload(
   filename: string,
   mime: string,
-  data: BlobPart | BlobPart[],
+  data: BlobPart | readonly BlobPart[],
 ) {
   const blob = new Blob(Array.isArray(data) ? data : [data], {
     type: mime.includes('charset') ? mime : `${mime};charset=utf-8`,
