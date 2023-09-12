@@ -10,6 +10,28 @@ await runBuild({
     version: '0.0.2',
     author: 'Jessidhia',
   },
+  'jnb.user.ts': {
+    name: 'PayPay Bank QIF Export',
+    match: [
+      'https://login.paypay-bank.co.jp/wctx/*',
+      'https://login.japannetbank.co.jp/wctx/*',
+    ],
+    icon: 'https://login.paypay-bank.co.jp/favicon.ico',
+    grant: ['GM.setValue', 'GM.getValue'],
+    noframes: true,
+    version: '2.5',
+    author: 'Jessidhia',
+  },
+  'suica.user.ts': {
+    name: 'Export Suica/Pasmo transactions to QIF',
+    match: [
+      'https://www.mobilesuica.com/iq/ir/SuicaDisp.aspx',
+      'https://www.mobile.pasmo.jp/iq/ir/SuicaDisp.aspx',
+    ],
+    icon: 'https://www.jreast.co.jp/favicon.ico',
+    noframes: true,
+    version: '0.3',
+    author: 'Jessidhia',
   },
 })
 Deno.exit()
