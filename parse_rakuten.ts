@@ -70,17 +70,25 @@ export default function parseRakutenCSV(raw: string): RakutenTransaction[] {
       // or otherwise are only present on past months. The only constant is inconsistency.
 
       // deno-lint-ignore no-irregular-whitespace
-      // "マスター国内利用　MZZ " — the "MZZ" bit varies on every transaction
+      // "マスター国内利用　MZZ " — the "MZZ" bit varies, sometimes "MYY", rules unknown
       payee = payee.replace(/^マスター国内利用\s+[A-Z]{3}\s+/u, '')
-
       // deno-lint-ignore no-irregular-whitespace
-      // "海外利用　１　" — unknown if the digits are variable
-      payee = payee.replace(/^海外利用\s+[０-９]+\s+/u, '')
+      // "ＶＩＳＡ国内利用　VS " — unknown if "VS" varies
+      payee = payee.replace(/^ＶＩＳＡ国内利用\s+[A-Z]{2}\s+/u, '')
 
       if (/^ＪＣＢ国内利用\s+QP\s+/u.test(payee)) {
         notes.push('QuicPay')
         payee = payee.replace(/^ＪＣＢ国内利用\s+QP\s+/u, '')
+      } else {
+        // Guessed format
+        payee = payee.replace(/^ＪＣＢ国内利用\s+[A-Z]{2}\s+/u, '')
       }
+
+      // TODO: AMEX, but I don't know what format it comes in
+
+      // deno-lint-ignore no-irregular-whitespace
+      // "海外利用　１　" — unknown if the digits are variable
+      payee = payee.replace(/^海外利用\s+[０-９]+\s+/u, '')
 
       if (payee.includes('利用国')) {
         void ([payee, countryCode] = payee.split('利用国'))
@@ -107,7 +115,7 @@ export default function parseRakutenCSV(raw: string): RakutenTransaction[] {
             notes.push(`Converted ${amount.toFixed(2)} @ ${rate} ¥ e.a.`)
           }
         } else {
-          console.error('Unknown 参考 entry format:', rawNote)
+          console.error('Unknown 備考 entry format:', rawNote)
         }
       }
 
