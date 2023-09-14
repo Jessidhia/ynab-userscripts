@@ -64,4 +64,4 @@ don't know if buses also get this treatment.
 Transactions that add cash to the card are also handled and the payee is always
 prefixed with `Charge`.
 
-[Install Userscript](https://github.com/Jessidhia/ynab-userscripts/releases/latest/download/rakuten_card.user.js)
+[Install Userscript](https://github.com/Jessidhia/ynab-userscripts/releases/latest/download/suica.user.js)
