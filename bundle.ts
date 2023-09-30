@@ -1,6 +1,6 @@
 import * as esbuild from 'https://deno.land/x/esbuild@v0.19.2/mod.js'
 
-await runBuild({
+const ctx = await makeContexts({
   'rakuten_card.user.ts': {
     name: 'Rakuten Card QIF generator',
     match:
@@ -34,7 +34,18 @@ await runBuild({
     author: 'Jessidhia',
   },
 })
-Deno.exit()
+
+if (Deno.args.includes('watch')) {
+  await Promise.all(ctx.map((ctx) => ctx.watch()))
+  Deno.addSignalListener('SIGINT', async () => {
+    await Promise.all(ctx.map((ctx) => ctx.dispose()))
+    Deno.exit()
+  })
+} else {
+  await Promise.all(ctx.map((ctx) => ctx.rebuild()))
+  await Promise.all(ctx.map((ctx) => ctx.dispose()))
+  Deno.exit()
+}
 
 /** @see https://violentmonkey.github.io/api/metadata-block/ */
 interface MetadataBlock {
@@ -76,12 +87,12 @@ interface MetadataBlock {
   downloadURL?: string
 }
 
-async function runBuild(scripts: Record<string, MetadataBlock>) {
+async function makeContexts(scripts: Record<string, MetadataBlock>) {
   // run esbuild configuration
   try {
-    await Promise.all(
+    return await Promise.all(
       Object.entries(scripts).map(([entrypoint, metadata]) =>
-        esbuild.build({
+        esbuild.context({
           banner: {
             js: metadataToComment(metadata) +
               '\n// deno-lint-ignore-file\n// deno-fmt-ignore-file\n',
