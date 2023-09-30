@@ -40,6 +40,14 @@ if (pageTitle.endsWith('デビット　ご利用明細一覧')) {
   }
 }
 
+interface ParsedTransaction {
+  date: string
+  payee: string
+  expense: string
+  income: string
+  tag?: string
+}
+
 async function handleExportClick(e: Event) {
   e.preventDefault()
 
@@ -67,10 +75,11 @@ async function handleExportClick(e: Event) {
     'application/qif',
     generateQif(
       { type: QifType.Bank },
-      parsed.map(({ date, payee, expense, income }) => ({
+      parsed.map(({ date, payee, expense, income, tag }) => ({
         date,
         payee,
         amount: (BigInt(income || '0') - BigInt(expense || '0')).toString(),
+        check: tag,
       })),
     ),
   )
@@ -81,8 +90,8 @@ function parseTransactions(details: Record<string, CCDetail>) {
     '.detail-list-wrap .detail-inner > ul',
   )
 
-  const parsed = []
-  const missing = []
+  const parsed: ParsedTransaction[] = []
+  const missing: string[] = []
   for (const row of tableRows) {
     if (row.childElementCount !== 4) {
       alert('Table format changed')
@@ -90,7 +99,7 @@ function parseTransactions(details: Record<string, CCDetail>) {
     }
 
     const rawDate = row.children[0]!.children[0]!.textContent!.trim()
-    const payee = Array.from(row.children[0]!.childNodes).filter((node) =>
+    const rawPayee = Array.from(row.children[0]!.childNodes).filter((node) =>
       node.nodeType === 3 && node.textContent!.trim() !== ''
     )[0].textContent!.trim()
     const isExpense = new Set(row.children[1]!.classList).has('colRed')
@@ -101,23 +110,29 @@ function parseTransactions(details: Record<string, CCDetail>) {
     // YNAB does not read time, only date
     const date = rawDate.replace(/\//g, '-').replace(/ .*$/, '')
 
-    const tag = /^.デビット.*　([A-Z0-9]+)$/.exec(payee)?.[1]
+    const { payee, tag } =
+      /^.デビット(?:　(?<payee>.+))?　(?<tag>[A-Z0-9]+)$/u.exec(rawPayee)
+        ?.groups ??
+        /^.+デビット(?:売上予約)?\((?<tag>[A-Z0-9]+)\)$/u.exec(rawPayee)
+          ?.groups ??
+        {}
     if (tag) {
       const detail = details[tag]
-      if (!detail) {
+      if (!detail && !payee) {
         missing.push(tag)
       } else {
         parsed.push({
           date,
-          payee: detail.payee,
+          payee: payee || detail.payee,
           expense: isExpense ? value : '',
           income: !isExpense ? value : '',
+          tag,
         })
       }
     } else {
       parsed.push({
         date,
-        payee,
+        payee: rawPayee,
         expense: isExpense ? value : '',
         income: !isExpense ? value : '',
       })
