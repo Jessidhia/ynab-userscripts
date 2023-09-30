@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "bundle": "deno run --allow-read --allow-write=./bundles --allow-env --allow-run bundle.ts"
+    "bundle": "deno run --allow-read --allow-write=./bundles --allow-env --allow-run bundle.ts",
+    "watch": "deno task bundle watch"
   },
   "fmt": {
     "semiColons": false,
