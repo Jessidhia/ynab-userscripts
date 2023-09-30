@@ -39,7 +39,8 @@ fee, but this is untested.
 Generates a QIF export of the transactions in the account statement.
 
 May require that the Debit Card statement be browsed to in order to correlate
-payees. Credit Cards are untested.
+payees in transactions older than 2022; newer transactions should not require it.
+I do not have a Credit Card with them so that is untested / unsupported.
 
 [Install Userscript](https://github.com/Jessidhia/ynab-userscripts/releases/latest/download/jnb.user.js)
 
