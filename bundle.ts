@@ -19,7 +19,7 @@ const ctx = await makeContexts({
     icon: 'https://login.paypay-bank.co.jp/favicon.ico',
     grant: ['GM.setValue', 'GM.getValue'],
     noframes: true,
-    version: '2.5',
+    version: '2.6',
     author: 'Jessidhia',
   },
   'suica.user.ts': {
