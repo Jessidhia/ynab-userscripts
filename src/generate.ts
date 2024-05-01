@@ -34,6 +34,7 @@ export interface Transaction extends TransactionSplit {
   date: Date | string
   // P
   payee?: string
+  /** NOTE: YNAB's parser currently ignores splits */
   splits?: TransactionSplit[]
 }
 
@@ -78,14 +79,14 @@ export default function generateQif(
         ? parseFloat(split.amount)
         : split.amount,
         [
-          `$${split.amount}`,
           split.category &&
           `S${(typeof split.category === 'string'
             ? split.category
             : split.category.join(':'))}`,
           split.memo && `E${split.memo}`,
           split.check && `N${split.check}`,
-        ]),
+          `$${split.amount}`,
+        ].filter(Boolean).join('\n')),
     ).filter(Boolean).join('\n')
 
     if (
