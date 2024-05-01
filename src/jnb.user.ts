@@ -46,6 +46,13 @@ interface ParsedTransaction {
   expense: string
   income: string
   tag?: string
+  interest?: ParsedInterest
+}
+
+interface ParsedInterest {
+  preTax: string
+  incomeTax: string
+  otherTax: string
 }
 
 async function handleExportClick(e: Event) {
@@ -75,14 +82,45 @@ async function handleExportClick(e: Event) {
     'application/qif',
     generateQif(
       { type: QifType.Bank },
-      parsed.map(({ date, payee, expense, income, tag }) => ({
+      parsed.map(({ date, payee, expense, income, tag, interest }) => ({
         date,
         payee,
         amount: (BigInt(income || '0') - BigInt(expense || '0')).toString(),
         check: tag,
+        // YNAB's parser does not support splits, also write the values in the memo field
+        memo: interest && formatInterest(interest),
+        splits: interest &&
+          [
+            { memo: 'Before Tax', amount: interest.preTax },
+            {
+              memo: 'Income Tax',
+              amount: BigInt(`-${interest.incomeTax || '0'}`).toString(),
+            },
+            {
+              memo: 'Other Taxes',
+              amount: BigInt(`-${interest.otherTax || '0'}`).toString(),
+            },
+          ],
       })),
     ),
   )
+
+  function formatInterest(interest: ParsedInterest) {
+    const { preTax } = interest
+    const incomeTax = interest.incomeTax || '0'
+    const otherTax = interest.otherTax || '0'
+
+    if (incomeTax == '0' && otherTax == '0') {
+      return 'No deductions'
+    }
+    if (otherTax == '0') {
+      return `${preTax} - ${incomeTax} (income tax)`
+    }
+    if (incomeTax == '0') {
+      return `${preTax} - ${otherTax} (other taxes)`
+    }
+    return `${preTax} - (${incomeTax} (income tax) + ${otherTax} (other taxes))`
+  }
 }
 
 function parseTransactions(details: Record<string, CCDetail>) {
@@ -99,9 +137,6 @@ function parseTransactions(details: Record<string, CCDetail>) {
     }
 
     const rawDate = row.children[0]!.children[0]!.textContent!.trim()
-    const rawPayee = Array.from(row.children[0]!.childNodes).filter((node) =>
-      node.nodeType === 3 && node.textContent!.trim() !== ''
-    )[0].textContent!.trim()
     const isExpense = new Set(row.children[1]!.classList).has('colRed')
     const value = Array.from(row.children[1]!.childNodes).filter((node) =>
       node.nodeType === 3 && node.textContent!.trim() !== ''
@@ -110,32 +145,68 @@ function parseTransactions(details: Record<string, CCDetail>) {
     // YNAB does not read time, only date
     const date = rawDate.replace(/\//g, '-').replace(/ .*$/, '')
 
-    const { payee, tag } =
-      /^.デビット(?:　(?<payee>.+))?　(?<tag>[A-Z0-9]+)$/u.exec(rawPayee)
-        ?.groups ??
-        /^.+デビット(?:売上予約)?\((?<tag>[A-Z0-9]+)\)$/u.exec(rawPayee)
+    const interestTable = row.children[0]!.querySelector<HTMLTableElement>(
+      '.detailLink-wrap ~ div > table',
+    )
+    if (interestTable) {
+      if (
+        !row.children[0]!.querySelector<HTMLAnchorElement>('a[name=detailLink]')
+          ?.textContent?.startsWith('決算お利息')
+      ) {
+        alert('Unexpected inner table in non-interest-related transaction')
+        // only affects this one transaction so probably ok to just skip
+        continue
+      }
+      // interest payment, has no payee info to extract
+      const [preTax, incomeTax, otherTax] = Array.from(
+        { length: 3 },
+        (_, i) =>
+          interestTable.rows[i + 1].cells[1].textContent!.trim().replace(
+            /\s*円/,
+            '',
+          ).replaceAll(',', ''),
+      )
+
+      parsed.push({
+        date,
+        expense: '',
+        income: value,
+        payee: 'JNB Interest',
+        interest: { preTax, incomeTax, otherTax },
+      })
+    } else {
+      // ordinary payee
+      const rawPayee = Array.from(row.children[0]!.childNodes).filter((node) =>
+        node.nodeType === 3 && node.textContent!.trim() !== ''
+      )[0].textContent!.trim()
+
+      const { payee, tag } =
+        /^.デビット(?:　(?<payee>.+))?　(?<tag>[A-Z0-9]+)$/u.exec(rawPayee)
           ?.groups ??
-        {}
-    if (tag) {
-      const detail = details[tag]
-      if (!detail && !payee) {
-        missing.push(tag)
+          /^.+デビット(?:売上予約)?\((?<tag>[A-Z0-9]+)\)$/u.exec(rawPayee)
+            ?.groups ??
+          {}
+      if (tag) {
+        const detail = details[tag]
+        if (!detail && !payee) {
+          missing.push(tag)
+        } else {
+          parsed.push({
+            date,
+            payee: payee || detail.payee,
+            expense: isExpense ? value : '',
+            income: !isExpense ? value : '',
+            tag,
+          })
+        }
       } else {
         parsed.push({
           date,
-          payee: payee || detail.payee,
+          payee: rawPayee,
           expense: isExpense ? value : '',
           income: !isExpense ? value : '',
-          tag,
         })
       }
-    } else {
-      parsed.push({
-        date,
-        payee: rawPayee,
-        expense: isExpense ? value : '',
-        income: !isExpense ? value : '',
-      })
     }
   }
   return { parsed, missing }
