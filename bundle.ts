@@ -1,5 +1,7 @@
-import * as esbuild from 'https://deno.land/x/esbuild@v0.19.2/mod.js'
+import * as esbuild from 'https://deno.land/x/esbuild@v0.20.2/mod.js'
+import * as cli from '@std/cli/mod.ts'
 
+// paths relative to ./src
 const ctx = await makeContexts({
   'rakuten_card.user.ts': {
     name: 'Rakuten Card QIF generator',
@@ -35,7 +37,9 @@ const ctx = await makeContexts({
   },
 })
 
-if (Deno.args.includes('watch')) {
+const { watch } = cli.parseArgs(Deno.args, { boolean: ['watch'] })
+
+if (watch) {
   await Promise.all(ctx.map((ctx) => ctx.watch()))
   Deno.addSignalListener('SIGINT', async () => {
     await Promise.all(ctx.map((ctx) => ctx.dispose()))
@@ -94,14 +98,14 @@ async function makeContexts(scripts: Record<string, MetadataBlock>) {
       Object.entries(scripts).map(([entrypoint, metadata]) =>
         esbuild.context({
           banner: {
-            js: metadataToComment(metadata) +
-              '\n// deno-lint-ignore-file\n// deno-fmt-ignore-file\n',
+            js: metadataToComment(metadata) + '\n',
           },
-          entryPoints: [entrypoint],
+          entryPoints: [`src/${entrypoint}`],
           bundle: true,
           legalComments: 'inline',
           outdir: 'bundles',
           charset: 'utf8',
+          logLevel: 'info',
         })
       ),
     )

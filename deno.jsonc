@@ -1,8 +1,9 @@
 {
   "tasks": {
     "bundle": "deno run --allow-read --allow-write=./bundles --allow-env --allow-run bundle.ts",
-    "watch": "deno task bundle watch"
+    "watch": "deno task bundle --watch"
   },
+  "imports": { "@std/": "https://deno.land/std@0.224.0/" },
   "fmt": {
     "semiColons": false,
     "singleQuote": true
@@ -12,6 +13,8 @@
       "deno.ns",
       "dom",
       "dom.iterable"
-    ]
-  }
+    ],
+    "strict": true
+  },
+  "exclude": ["./bundles"]
 }
